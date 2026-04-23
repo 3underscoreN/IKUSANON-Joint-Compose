@@ -1,0 +1,6 @@
+[submodule "apps/web"]
+	path = apps/web
+	url = https://github.com/3underscoreN/ikusanon_boostday_form
+[submodule "apps/bot"]
+	path = apps/bot
+	url = https://github.com/3underscoreN/IKU.SAN.ON._Chunithm_Bot
