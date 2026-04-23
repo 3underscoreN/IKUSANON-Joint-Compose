@@ -3,7 +3,7 @@ This is a not-so-"monorepo" respoitory for all applications developed for IKUSAN
 
 ## Applications
 - [IKUSANON Bot](https://github.com/3underscoreN/IKU.SAN.ON._Chunithm_Bot)
-  - This is the `bot` instance, which is a discord bot that provides users an entry point to the INKUSANON Boostday Form outlined below. It also comes with its own features.
+  - This is the `bot` instance, which is a discord bot that provides users an entry point to the IKUSANON Boostday Form outlined below. It also comes with its own features.
 - [IKUSANON Boostday Form](https://github.com/3underscoreN/ikusanon_boostday_form)
   - This is the `web` instance, which is more of the "brain" of all applications. It provides users with a form to fill out their proposed boostdays. Also comes with a database for storing the inputs, and APIs for the frontend, as well as the bot to interact with the database.
 
