@@ -12,7 +12,7 @@ To build the applications, you would need [Docker](https://docs.docker.com/get-s
 
 1. Clone the repository and navigate to the directory:
 ```sh
-git clone https://github.com/3underscoreN/IKUSANON-Joint-Compose
+git clone --recursive-submodules https://github.com/3underscoreN/IKUSANON-Joint-Compose 
 cd IKUSANON-Joint-Compose
 ```
 
