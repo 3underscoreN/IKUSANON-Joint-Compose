@@ -43,4 +43,3 @@ server {
         proxy_pass http://web:3000;
     }
 }
-s
