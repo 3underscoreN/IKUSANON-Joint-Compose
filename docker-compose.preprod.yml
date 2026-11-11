@@ -8,7 +8,7 @@ services:
     depends_on:
       - web
     volumes:
-      - ./nginx/preprod.conf.d:/etc/nginx/conf.d
+      - ./nginx/preprod.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - webbot_network
 
