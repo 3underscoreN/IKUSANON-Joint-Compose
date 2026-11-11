@@ -58,7 +58,13 @@ services:
     build:
       context: ./apps/bot
       dockerfile: Dockerfile
-    env_file: .env.prod
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN:-}
+      - PARSER_SEGA_ID=${PARSER_SEGA_ID:-}
+      - PARSER_SEGA_PW=${PARSER_SEGA_PW:-}
+      - WEB_URL_BASE=${WEB_URL_BASE:-http://localhost:83}
+      - WEB_API_URL_BASE=${WEB_API_URL_BASE:-http://web:3000}
+      - BOT_OWNER=${BOT_OWNER:-}
     restart: unless-stopped
     init: true
     volumes:
