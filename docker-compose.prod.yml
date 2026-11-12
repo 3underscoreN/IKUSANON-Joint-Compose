@@ -23,11 +23,35 @@ services:
     expose:
       - "3000"
     restart: unless-stopped
+    init: true
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - webdb_network
       - webbot_network
+
+  # One-shot job: applies Prisma migrations before the web container starts.
+  # The migration toolchain is deliberately kept out of the runtime image.
+  migrate:
+    container_name: ikusanon-boostday-form-migrate-prod
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: migrate
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      # webdb_network is internal; keep an egress-capable network as well so a
+      # hosted DATABASE_URL (e.g. Prisma Postgres) is reachable.
+      - webdb_network
+      - webbot_network
+    restart: 'no'
 
   postgres:
     container_name: ikusanon-boostday-form-postgres-prod
@@ -67,6 +91,9 @@ services:
       - BOT_OWNER=${BOT_OWNER:-}
     restart: unless-stopped
     init: true
+    # The bot runs as UID/GID 1000 inside the image; on Linux hosts make sure
+    # this bind mount is writable by that user (e.g. sudo chown -R 1000:1000
+    # apps/bot/data), or use a named volume instead.
     volumes:
       - ./apps/bot/data:/app/data
     networks:
