@@ -17,8 +17,8 @@ services:
       migrate:
         condition: service_completed_successfully
     networks:
-      - webdb_network
-      - webbot_network
+      - webdb_network_dev
+      - webbot_network_dev
 
   # One-shot job: applies Prisma migrations before the web container starts.
   # The migration toolchain is deliberately kept out of the runtime image.
@@ -35,8 +35,8 @@ services:
         condition: service_healthy
     networks:
       # Keep an egress-capable network available for a hosted DATABASE_URL.
-      - webdb_network
-      - webbot_network
+      - webdb_network_dev
+      - webbot_network_dev
     restart: 'no'
 
   postgres:
@@ -47,12 +47,12 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=${POSTGRES_DB:-ikusanon_boostday_form_dev}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     restart: unless-stopped
     ports:
       - '5432:5432'
     networks:
-      - webdb_network
+      - webdb_network_dev
     healthcheck:
       test:
         [
@@ -77,18 +77,18 @@ services:
     volumes:
       - ./apps/bot/data:/app/data
     networks:
-      - webbot_network
+      - webbot_network_dev
     depends_on:
       - web
 
 networks:
-  webdb_network:
+  webdb_network_dev:
     driver: bridge
     # internal: true
-  webbot_network:
+  webbot_network_dev:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data_dev:
     driver: local
 
