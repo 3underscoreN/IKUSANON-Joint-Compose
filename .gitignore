@@ -1,6 +1,7 @@
 # Environment variables
 
 .env.dev
+.env.preprod
 .env.prod
 
 # Pycache

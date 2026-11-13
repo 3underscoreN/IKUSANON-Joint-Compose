@@ -7,6 +7,19 @@ This is a not-so-"monorepo" respoitory for all applications developed for IKUSAN
 - [IKUSANON Boostday Form](https://github.com/3underscoreN/ikusanon_boostday_form)
   - This is the `web` instance, which is more of the "brain" of all applications. It provides users with a form to fill out their proposed boostdays. Also comes with a database for storing the inputs, and APIs for the frontend, as well as the bot to interact with the database.
 
+## Branches and submodules
+The parent branches pair with the matching submodule branches:
+
+- `main` (joint compose) → `apps/web` `main`, `apps/bot` `main`
+- `dev` (joint compose) → `apps/web` `dev`, `apps/bot` `dev`
+
+After switching the parent branch, put the submodule working trees on the matching
+branch with:
+
+```sh
+./scripts/checkout-submodules.sh
+```
+
 ## Building
 To build the applications, you would need [Docker](https://docs.docker.com/get-started/get-docker/) installed.
 

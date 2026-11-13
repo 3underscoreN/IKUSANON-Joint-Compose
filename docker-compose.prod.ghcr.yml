@@ -1,0 +1,152 @@
+# Production stack that pulls pre-built application images from GHCR instead
+# of building them from the submodule source on the production host.
+#
+# Use this file INSTEAD of docker-compose.prod.yml (both define the same
+# container/network/volume names, so they are drop-in replacements and must
+# not run side by side).
+#
+# Required environment (put in .env.prod and pass --env-file, or export):
+#   GHCR_OWNER      Lowercase GitHub user/org that owns the packages
+#                   (default: iku-san-on)
+#   WEB_IMAGE_TAG   Tag produced by apps/web's Publish container images workflow
+#                   (for example v0.0.1-alpha; MUST also match the migration image)
+#   BOT_IMAGE_TAG   Tag produced by apps/bot's Publish container image workflow
+#   DATABASE_URL    PostgreSQL connection string
+#   POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+#   DISCORD_TOKEN / PARSER_SEGA_ID / PARSER_SEGA_PW / BOT_OWNER
+#   WEB_URL_BASE / WEB_API_URL_BASE
+#
+# GHCR still creates a package as private on its very first publish. Make the
+# packages public once, then every later push stays public:
+#   Org-wide (future packages):
+#     https://github.com/orgs/IKU-SAN-ON/settings/packages
+#     -> "Package Creation" -> Public
+#   Per package:
+#     https://github.com/orgs/IKU-SAN-ON/packages
+#     -> package -> Package settings -> Danger Zone
+#     -> Change visibility -> Public
+# Public packages are free on GitHub Packages. Note that making a package
+# public is irreversible.
+#
+# Run with:
+#   docker compose --env-file .env.prod -f docker-compose.prod.ghcr.yml pull
+#   docker compose --env-file .env.prod -f docker-compose.prod.ghcr.yml up -d
+#
+# WEB_IMAGE_TAG and BOT_IMAGE_TAG are required (there is deliberately no
+# ":latest" fallback). Pin them to release tags, or replace a tag with the
+# sha256 digest printed by the publish workflow for strongest immutability.
+
+services:
+  nginx:
+    container_name: ikusanon-web-nginx-prod
+    image: nginx:latest
+    ports:
+      - "83:80"
+    restart: unless-stopped
+    depends_on:
+      - web
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - webbot_network_prod
+
+  web:
+    container_name: ikusanon-boostday-form-web-prod
+    image: ghcr.io/${GHCR_OWNER:-iku-san-on}/ikusanon-web:${WEB_IMAGE_TAG:?WEB_IMAGE_TAG must be set}
+    pull_policy: always
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_URL=${DATABASE_URL}
+    expose:
+      - "3000"
+    restart: unless-stopped
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - webdb_network_prod
+      - webbot_network_prod
+
+  # One-shot job: applies Prisma migrations before the web container starts.
+  # The migration toolchain is deliberately kept out of the runtime image, so
+  # this uses the separate -migrate image published by the web workflow.
+  migrate:
+    container_name: ikusanon-boostday-form-migrate-prod
+    image: ghcr.io/${GHCR_OWNER:-iku-san-on}/ikusanon-web-migrate:${WEB_IMAGE_TAG:?WEB_IMAGE_TAG must be set}
+    pull_policy: always
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      # webdb_network_prod is internal; keep an egress-capable network as well
+      # so a hosted DATABASE_URL (e.g. Prisma Postgres) is reachable.
+      - webdb_network_prod
+      - webbot_network_prod
+    restart: 'no'
+
+  postgres:
+    container_name: ikusanon-boostday-form-postgres-prod
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-ikusanon_boostday_form_prod}
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    restart: unless-stopped
+    expose:
+      - "5432"
+    networks:
+      - webdb_network_prod
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ikusanon_boostday_form_prod} -h localhost",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    container_name: ikusanon-bot-prod
+    image: ghcr.io/${GHCR_OWNER:-iku-san-on}/ikusanon-bot:${BOT_IMAGE_TAG:?BOT_IMAGE_TAG must be set}
+    pull_policy: always
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN:-}
+      - PARSER_SEGA_ID=${PARSER_SEGA_ID:-}
+      - PARSER_SEGA_PW=${PARSER_SEGA_PW:-}
+      - WEB_URL_BASE=${WEB_URL_BASE:-}
+      - WEB_API_URL_BASE=${WEB_API_URL_BASE:-}
+      - BOT_OWNER=${BOT_OWNER:-}
+    restart: unless-stopped
+    init: true
+    # The bot runs as UID/GID 1000 inside the image; on Linux hosts make sure
+    # this bind mount is writable by that user (e.g. sudo chown -R 1000:1000
+    # apps/bot/data), or use a named volume instead.
+    #
+    # This directory also contains the bot's data/*.py modules, which the mount
+    # overlays inside the image. Keep the apps/bot submodule checked out on the
+    # host (git submodule update --init apps/bot) so those modules stay present.
+    volumes:
+      - ./apps/bot/data:/app/data
+    networks:
+      - webbot_network_prod
+    depends_on:
+      - web
+
+networks:
+  webdb_network_prod:
+    driver: bridge
+    internal: true
+  webbot_network_prod:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:
+    driver: local
