@@ -51,7 +51,7 @@ services:
       # hosted DATABASE_URL (e.g. Prisma Postgres) is reachable.
       - webdb_network_preprod
       - webbot_network_preprod
-    restart: 'no'
+    restart: "no"
 
   postgres:
     container_name: ikusanon-boostday-form-postgres-preprod
@@ -87,7 +87,7 @@ services:
       - PARSER_SEGA_ID=${PARSER_SEGA_ID:-}
       - PARSER_SEGA_PW=${PARSER_SEGA_PW:-}
       - WEB_URL_BASE=${WEB_URL_BASE:-http://localhost:83}
-      - WEB_API_URL_BASE=${WEB_API_URL_BASE:-http://web:3000}
+      - WEB_API_URL_BASE=${WEB_API_URL_BASE:-http://web:3000/api/v1}
       - BOT_OWNER=${BOT_OWNER:-}
     restart: unless-stopped
     init: true
@@ -100,6 +100,21 @@ services:
       - webbot_network_preprod
     depends_on:
       - web
+
+  extractor:
+    container_name: ikusanon-extractor-preprod
+    image: ghcr.io/3underscoreN/chunithm-score-extractor:latest
+    pull_policy: always
+    restart: unless-stopped
+    expose:
+      - "8000"
+    networks:
+      - webbot_network_prod
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   webdb_network_preprod:

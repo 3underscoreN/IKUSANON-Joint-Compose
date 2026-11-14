@@ -8,7 +8,7 @@ services:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
     ports:
-      - '3000:3000'
+      - "3000:3000"
     restart: unless-stopped
     init: true
     depends_on:
@@ -37,7 +37,7 @@ services:
       # Keep an egress-capable network available for a hosted DATABASE_URL.
       - webdb_network_dev
       - webbot_network_dev
-    restart: 'no'
+    restart: "no"
 
   postgres:
     container_name: ikusanon-boostday-form-postgres-dev
@@ -50,14 +50,14 @@ services:
       - postgres_data_dev:/var/lib/postgresql/data
     restart: unless-stopped
     ports:
-      - '5432:5432'
+      - "5432:5432"
     networks:
       - webdb_network_dev
     healthcheck:
       test:
         [
-          'CMD-SHELL',
-          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ikusanon_boostday_form_dev} -h localhost',
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ikusanon_boostday_form_dev} -h localhost",
         ]
       interval: 10s
       timeout: 5s
@@ -81,6 +81,20 @@ services:
     depends_on:
       - web
 
+  extractor:
+    container_name: ikusanon-extractor-dev
+    image: ghcr.io/3underscoreN/chunithm-score-extractor:latest
+    restart: unless-stopped
+    expose:
+      - "8000"
+    networks:
+      - webbot_network_dev
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   webdb_network_dev:
     driver: bridge
@@ -91,4 +105,3 @@ networks:
 volumes:
   postgres_data_dev:
     driver: local
-
