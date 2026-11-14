@@ -103,7 +103,7 @@ services:
 
   extractor:
     container_name: ikusanon-extractor-preprod
-    image: ghcr.io/3underscoreN/chunithm-score-extractor:latest
+    image: ghcr.io/3underscoren/chunithm-score-extractor:latest
     pull_policy: always
     restart: unless-stopped
     expose:

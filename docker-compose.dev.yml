@@ -83,7 +83,7 @@ services:
 
   extractor:
     container_name: ikusanon-extractor-dev
-    image: ghcr.io/3underscoreN/chunithm-score-extractor:latest
+    image: ghcr.io/3underscoren/chunithm-score-extractor:latest
     restart: unless-stopped
     expose:
       - "8000"
